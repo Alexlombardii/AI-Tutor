@@ -1,0 +1,17 @@
+# requirements.txt for backend
+
+# Server
+fastapi[all]        # Includes CLI tools for 'fastapi dev' command
+uvicorn[standard]   # For running FastAPI (backup method)
+
+# Database
+# (will add later)
+
+# APIs
+openai             # For OpenAI API
+
+# Additional essentials
+python-dotenv      # For loading .env files
+python-multipart   # For handling form data in FastAPI
+requests           # For making HTTP requests (backup/utility)
+pydantic           # For data types
