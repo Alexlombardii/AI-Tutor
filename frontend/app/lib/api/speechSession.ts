@@ -1,13 +1,15 @@
-const API_URL = "http://localhost:8000/api/v1/speech_session";
+import { ChatMessage, ChatResponse } from "../types/chat";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export const createSpeechSession = async () => {
-    const tokenResponse = await fetch(API_URL, {
+    const tokenResponse = await fetch(`${API_URL}/api/v1/speech_session`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
         },
     });
-    console.log('�� Response status:', tokenResponse.status);
+    console.log(' Response status:', tokenResponse.status);
     
     const data = await tokenResponse.json();
     console.log('📋 Response data:', data);
