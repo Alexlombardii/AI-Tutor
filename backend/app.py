@@ -4,6 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routes import chat, speech_session
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 app = FastAPI()
 
 api_router = APIRouter()
@@ -15,6 +19,7 @@ app.include_router(api_router)
 origins = [
     "http://localhost:3000",  # React frontend
     "http://127.0.0.1:3000", # Alternative localhost
+    f"{os.getenv('FRONTEND_URL')}"
 ]
 
 app.add_middleware(
