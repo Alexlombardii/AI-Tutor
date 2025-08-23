@@ -2,14 +2,14 @@ from fastapi import FastAPI
 from fastapi.routing import APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import chat 
+from routes import chat, speech_session
 
 app = FastAPI()
 
 api_router = APIRouter()
 
 api_router.include_router(chat.router, prefix="/api/v1")
-
+api_router.include_router(speech_session.router, prefix="/api/v1")
 app.include_router(api_router)
 
 origins = [

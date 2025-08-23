@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { chat } from './lib/api/chat';
 import Message from './components/Message';
 import ChatInput from './components/Chatbox';
+import SpeechButton from './components/SpeechButton';
 
 export default function ChatPage() {
   const [inputMessage, setInputMessage] = useState('');
@@ -64,15 +65,21 @@ export default function ChatPage() {
         </div>
       </div>
   
-      {/* Input - centered */}
-      <div className="flex justify-center">
-        <div className="w-full max-w-2xl px-4">
-          <ChatInput
-            value={inputMessage}
-            onChange={setInputMessage}
-            onSend={handleSendMessage}
-            disabled={isLoading}
-          />
+      {/* Input - ChatGPT style layout */}
+      <div className="flex justify-center px-4 pb-8">
+        <div className="w-full max-w-4xl">
+          <div className="flex items-center gap-4">
+            {/* Speech Button - positioned naturally to the left */}
+            <SpeechButton />
+            
+            {/* Chat Input - now handles the entire input area */}
+            <ChatInput
+              value={inputMessage}
+              onChange={setInputMessage}
+              onSend={handleSendMessage}
+              disabled={isLoading}
+            />
+          </div>
         </div>
       </div>
     </div>
