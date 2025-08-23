@@ -20,10 +20,12 @@ app.include_router(api_router)
 origins = [
     "http://localhost:3000",  # React frontend
     "http://127.0.0.1:3000", # Alternative localhost
-    f"{os.getenv('FRONTEND_URL')}"
+    f"{os.getenv('FRONTEND_URL')}",
 ]
 
-app.add_middleware(
+print(f"Final origins list: {origins}")
+
+app.add_middleware( 
     CORSMiddleware,
     allow_origins=origins,  # Allow from the origins list above -- for dev rn
     allow_credentials=True,
