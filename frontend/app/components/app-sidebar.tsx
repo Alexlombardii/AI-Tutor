@@ -30,33 +30,33 @@ import {
 
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
+    name: "Gian-Alessandro",
+    email: "banana-alessandro@gmail.com",
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
     {
-      title: "Playground",
+      title: "Courses",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
       items: [
         {
-          title: "History",
+          title: "Mathematics",
           url: "#",
         },
         {
-          title: "Starred",
+          title: "Physics",
           url: "#",
         },
         {
-          title: "Settings",
+          title: "Chemistry",
           url: "#",
         },
       ],
     },
     {
-      title: "Models",
+      title: "Progress",
       url: "#",
       icon: Bot,
       items: [
@@ -75,7 +75,7 @@ const data = {
       ],
     },
     {
-      title: "Documentation",
+      title: "Notes",
       url: "#",
       icon: BookOpen,
       items: [
@@ -154,7 +154,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
