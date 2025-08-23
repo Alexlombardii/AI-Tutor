@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes import chat, speech_session
 
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
