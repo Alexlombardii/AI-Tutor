@@ -3,6 +3,7 @@
 # Server
 fastapi[all]        # Includes CLI tools for 'fastapi dev' command
 uvicorn[standard]   # For running FastAPI (backup method)
+gunicorn            # Production WSGI server for deployment
 
 # Database
 # (will add later)
