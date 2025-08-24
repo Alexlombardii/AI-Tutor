@@ -32,7 +32,8 @@ const data = {
   user: {
     name: "Gian-Alessandro",
     email: "banana-alessandro@gmail.com",
-    avatar: "/avatars/shadcn.jpg",
+    // Remove the broken avatar path or use a placeholder
+    avatar: "", // or "/avatars/default.jpg" if you add a default image
   },
   navMain: [
     {
