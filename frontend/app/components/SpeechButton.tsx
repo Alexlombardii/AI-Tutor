@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from './ui/button';
 import { createSpeechSession } from '../lib/api/speechSession';
 
 export default function SpeechButton() {
@@ -8,7 +9,7 @@ export default function SpeechButton() {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSpeechStart = async () => {
-        if (isActive || isLoading) return; // Prevent multiple clicks
+        if (isActive || isLoading) return;
         
         try {
             setIsLoading(true);
@@ -18,7 +19,6 @@ export default function SpeechButton() {
             setIsActive(true);
         } catch (error) {
             console.error('❌ Speech session failed:', error);
-            // Reset on error so user can try again
             setIsActive(false);
         } finally {
             setIsLoading(false);
@@ -27,32 +27,30 @@ export default function SpeechButton() {
 
     const handleStopSession = () => {
         setIsActive(false);
-        console.log('🛑 Speech session stopped');
-        // Here you could also call an API to properly end the session
+            console.log('🛑 Speech session stopped');
     };
 
     if (isActive) {
         return (
-            <button 
+            <Button 
                 onClick={handleStopSession}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 min-w-[120px] justify-center"
+                variant="destructive"
+                size="lg"
+                className="min-w-[120px]"
             >
-                🛑 Stop
-            </button>
+                Stop
+            </Button>
         );
     }
 
     return (
-        <button 
+        <Button 
             onClick={handleSpeechStart}
             disabled={isLoading}
-            className={`${
-                isLoading 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
-            } text-white px-4 py-2.5 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 min-w-[120px] justify-center`}
+            size="lg"
+            className="min-w-[120px]"
         >
-            {isLoading ? '⏳ Starting...' : '🎤 Speech'}
-        </button>
+            {isLoading ? 'Starting...' : 'Speech'}
+        </Button>
     );
 }

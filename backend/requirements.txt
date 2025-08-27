@@ -10,6 +10,7 @@ gunicorn            # Production WSGI server for deployment
 
 # APIs
 openai             # For OpenAI API
+openai-agents      # For OpenAI Agents
 
 # Additional essentials
 python-dotenv      # For loading .env files

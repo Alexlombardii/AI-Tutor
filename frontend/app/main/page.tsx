@@ -1,18 +1,24 @@
 'use client';
-
-import { useState } from 'react';
-import { useAuth } from '@clerk/nextjs'
+import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { v4 as uuidv4 } from "uuid";
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { chat } from '../lib/api/chat';
+
+// Clerk imports
+import { useAuth } from '@clerk/nextjs'
+import { SignedIn, SignedOut, UserButton, SignInButton, SignUpButton } from '@clerk/nextjs';
+
+// UI Components
 import Message from '../components/Message';
-import ChatInput from '../components/Chatbox';
-import SpeechButton from '../components/SpeechButton';
+import Transcript from '../components/transcript';
 import { AppSidebar } from '../components/app-sidebar';
-import {
-  SidebarInset,
-  SidebarProvider,
-} from '../components/ui/sidebar';
+import {SidebarInset, SidebarProvider} from '../components/ui/sidebar';
+import { Separator } from '../components/ui/separator';
+import {SidebarTrigger} from '../components/ui/sidebar';
+import { WorkspaceView } from '../components/workspace/workspaceView';
+import { VideosView } from '../components/videos/videosView';
+import { SessionView } from '../components/session/sessionView'
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -21,61 +27,104 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '../components/ui/breadcrumb';
-import { Separator } from '../components/ui/separator';
-import {
-  SidebarTrigger,
-} from '../components/ui/sidebar';
-import { WorkspaceView } from '../components/workspace/workspaceView';
-import { VideosView } from '../components/videos/videosView';
-import { SignedIn, SignedOut, UserButton, SignInButton, SignUpButton } from '@clerk/nextjs';
 
-export default function ChatPage() {
+// Agent Configs
+import { chatSupervisorScenario } from '../lib/agents';
+
+// Types
+import { SessionStatus } from '../lib/types';
+
+// Hooks, API calls
+import { useRealtimeSession } from '../hooks/useRealtimeSession';
+import { TranscriptProvider, useTranscript } from '../contexts/transcriptContext';
+import { createSpeechSession } from '../lib/api/speechSession';
+
+// Create the inner component that uses the hooks
+function ChatPageContent() {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
 
   // ✅ ALL hooks must come first, before any conditional returns
-  const [inputMessage, setInputMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{content: string, isUser: boolean}>>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [currentView, setCurrentView] = useState('chat');
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
+  
+  // ✅ Add debug mode state
+  const [debugMode, setDebugMode] = useState(false);
+
+  // ✅ Fix: Add callbacks to useRealtimeSession
+  const { status, connect, disconnect } = useRealtimeSession({
+    onConnectionChange: (newStatus) => {
+      setSessionStatus(newStatus);
+      console.log('🔗 Connection status changed:', newStatus);
+    }
+  });
+
+  const audioElementRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Cmd+Shift+1 (Mac) or Ctrl+Shift+1 (Windows)
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === '1') {
+        event.preventDefault();
+        setDebugMode(prev => !prev);
+        console.log('Debug mode:', !debugMode ? 'ON' : 'OFF');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [debugMode]);
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
-      router.push('/');  // This will redirect to root app/page.tsx
+      router.push('/');
     }
   }, [isLoaded, isSignedIn, router]);
 
-  // Show loading while checking auth
+  // ✅ Fix: Update connect function to match new signature
+  const handleConnect = async () => {
+    if (!audioElementRef.current) {
+      console.error('Audio element not available');
+      return;
+    }
+
+    try {
+      await connect({
+        getEphemeralKey: createSpeechSession, // This returns the ephemeral key
+        initialAgents: chatSupervisorScenario,
+        audioElement: audioElementRef.current,
+        extraContext: {
+          // Add any extra context you need
+        },
+        outputGuardrails: [] // Add guardrails if needed
+      });
+    } catch (error) {
+      console.error('Failed to connect:', error);
+    }
+  };
+
+  // Add these state variables at the top with your other state
+  const [userText, setUserText] = useState<string>("");
+
+  // Add this function for sending messages
+  const handleSendMessage = () => {
+    if (!userText.trim()) return;
+    console.log('Sending message:', userText);
+    setUserText("");
+  };
+
+  // Add this function for downloading
+  const downloadRecording = () => {
+    console.log('Download recording');
+  };
+
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
 
-  // If not signed in, redirect to login
   if (!isSignedIn) {
     return null;
   }
-
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
-    
-    // Add user message
-    const userMessage = { content: inputMessage, isUser: true };
-    setMessages(prev => [...prev, userMessage]);
-    
-    setIsLoading(true);
-    try {
-      const response = await chat({ message: inputMessage });
-      
-      // Add AI response
-      const aiMessage = { content: response.response, isUser: false };
-      setMessages(prev => [...prev, aiMessage]);
-      setInputMessage('');
-    } catch (error) {
-      console.error('Failed to send message:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <SidebarProvider>
@@ -104,7 +153,7 @@ export default function ChatPage() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          {/* Top 3 cards - keeping them free for future use */}
+          {/* Top 3 cards */}
           <div className="grid auto-rows-min gap-4 md:grid-cols-3">
             <div 
               onClick={() => setCurrentView('chat')}
@@ -125,7 +174,7 @@ export default function ChatPage() {
                   ? 'bg-blue-50 border-2 border-blue-200' 
                   : 'bg-muted/50 hover:bg-muted/70'
               }`}
-            >
+            > 
               <div className="text-4xl mb-2">📝</div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Workspace</h3>
               <p className="text-sm text-gray-600 text-center">Work through problems together</p>
@@ -133,7 +182,7 @@ export default function ChatPage() {
             <div 
               onClick={() => setCurrentView('videos')}
               className={`aspect-video rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                currentView === 'workspace' 
+                currentView === 'videos' 
                   ? 'bg-blue-50 border-2 border-blue-200' 
                   : 'bg-muted/50 hover:bg-muted/70'
               }`}
@@ -144,59 +193,77 @@ export default function ChatPage() {
             </div>
           </div>
           
-          {/* Main Content Area - Dynamic based on currentView */}
+          {/* Main Content Area */}
           {currentView === 'workspace' && <WorkspaceView />}
           {currentView === 'videos' && <VideosView />}
           
           {currentView === 'chat' && (
-            <div className="bg-white rounded-xl border p-6 flex-1 flex flex-col">
-              <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">Session on 'Differentiation'</h1>
+            <>
+              {/* ✅ Always show SessionView in normal mode */}
+              {!debugMode && <SessionView />}
               
-              {/* Messages */}
-              <div className="flex-1 flex justify-center mb-6 overflow-y-auto max-h-96">
-                <div className="w-full max-w-2xl">
-                  {messages.map((message, index) => (
-                    <Message 
-                      key={index}
-                      content={message.content}
-                      isUser={message.isUser}
-                    />
-                  ))}
+              {/* ✅ Only show debug interface when debug mode is active */}
+              {debugMode && (
+                <div className="bg-white rounded-xl border p-6 flex-1 flex flex-col">
+                  {/* Debug indicator */}
+                  <div className="mb-4 p-2 bg-red-100 border border-red-300 rounded-lg">
+                    <span className="text-red-700 text-sm font-mono">🐛 DEBUG MODE - Cmd+Shift+1 to toggle</span>
+                  </div>
                   
-                  {isLoading && (
-                    <div className="flex justify-start mb-4">
-                      <div className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg rounded-bl-none">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                        </div>
-                      </div>
+                  {/* Voice connection controls */}
+                  <div className="mb-6 p-4 bg-blue-50 rounded-lg border">
+                    <h3 className="font-bold mb-2">Voice Connection Test</h3>
+                    <div className="flex gap-2 mb-2">
+                      <button 
+                        onClick={handleConnect}
+                        disabled={status === 'CONNECTING' || status === 'CONNECTED'}
+                        className="px-4 py-2 bg-green-500 text-white rounded disabled:bg-gray-300"
+                      >
+                        Connect Voice
+                      </button>
+                      <button 
+                        onClick={() => disconnect()}
+                        disabled={status === 'DISCONNECTED'}
+                        className="px-4 py-2 bg-red-500 text-white rounded disabled:bg-gray-300"
+                      >
+                        Disconnect Voice
+                      </button>
                     </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Input - moved to bottom */}
-              <div className="mt-auto">
-                <div className="flex justify-center">
-                  <div className="w-full max-w-4xl">
-                    <div className="flex items-center gap-4">
-                      <SpeechButton />
-                      <ChatInput
-                        value={inputMessage}
-                        onChange={setInputMessage}
-                        onSend={handleSendMessage}
-                        disabled={isLoading}
-                      />
+                    <div className="text-sm">
+                      Status: <span className="font-mono">{status}</span>
                     </div>
                   </div>
+                  
+                  <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">Session on 'Differentiation'</h1>
+                  
+                  {/* Transcript */}
+                  <div className="flex-1 mb-6">
+                    <Transcript 
+                      userText={userText}
+                      setUserText={setUserText}
+                      onSendMessage={handleSendMessage}
+                      canSend={status === 'CONNECTED'}
+                      downloadRecording={downloadRecording}
+                    />
+                  </div>
+                  
+                  {/* Hidden audio element */}
+                  <audio ref={audioElementRef} autoPlay style={{ display: 'none' }} />
                 </div>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </div>
       </SidebarInset>
     </SidebarProvider>
   );
-}  
+}
+
+// Wrap the entire component with TranscriptProvider
+export default function ChatPage() {
+  return (
+    <TranscriptProvider>
+      <ChatPageContent />
+    </TranscriptProvider>
+  );
+}

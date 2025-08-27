@@ -39,7 +39,7 @@ export default function LoginPage() {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            <SignIn routing="hash" />
+            <SignIn redirectUrl="/main" />
           </div>
         </div>
       </div>
