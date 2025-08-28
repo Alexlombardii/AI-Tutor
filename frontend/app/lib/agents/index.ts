@@ -115,6 +115,6 @@ findNearestStore:
 export const chatSupervisorScenario = [chatAgent];
 
 // Name of the company represented by this agent set. Used by guardrails
-export const chatSupervisorCompanyName = 'NewTelco';
+export const chatSupervisorCompanyName = 'Bana AI';
 
 export default chatSupervisorScenario;
