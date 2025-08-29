@@ -24,6 +24,8 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
     SessionStatus
   >('DISCONNECTED');
 
+  const { addTranscriptBreadcrumb } = useTranscript(); 
+
   const updateStatus = useCallback(
     (s: SessionStatus) => {
       setStatus(s);
@@ -114,13 +116,16 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
           },
         },
         outputGuardrails: outputGuardrails ?? [],
-        context: extraContext ?? {},
+        context: {
+          ...extraContext,
+          addTranscriptBreadcrumb, // To pass breadcrumb function to agent context
+        },
       });
 
       await sessionRef.current.connect({ apiKey: ek });
       updateStatus('CONNECTED');
     },
-    [callbacks, updateStatus],
+    [callbacks, updateStatus, addTranscriptBreadcrumb], // Add addTranscriptBreadcrumb to dependencies
   );
 
   const disconnect = useCallback(() => {
