@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request
 from openai import OpenAI
-from tutor_agents.tutor.prompt import tutorAgentInstructions
-from tutor_agents.tutor.tools import tutorAgentTools, update_session_state, get_tool_response
+from tutor_agents.tutor.prompt import tutor_agent_instructions
+from tutor_agents.tutor.tools import tutorAgentTools, get_tool_response
+from tutor_agents.state_agent.tools import analyze_session_state, state as session_state
 from tutor_agents.tutor.sample_data import exampleAccountInfo, examplePolicyDocs, exampleStoreLocations
 
 import os
@@ -10,6 +11,8 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List
 import json
+
+from tutor_agents.state_agent.tools import analyze_session_state, state as session_state
 
 load_dotenv()
 
@@ -23,11 +26,19 @@ class ConversationContext(BaseModel):
 @router.post("/tutor-supervisor")
 async def tutor_supervisor(context: ConversationContext):  
     
+    # Get current state as formatted JSON
+    current_state_json = json.dumps(session_state, indent=2)
+    
     content = f"""==== Conversation History ====
 {json.dumps(context.conversationHistory, indent=2)}
 
 ==== Relevant Context From Last User Message ===
-{context.relevantContextFromLastUserMessage}"""
+{context.relevantContextFromLastUserMessage}
+
+==== CURRENT SESSION STATE ====
+{current_state_json}
+
+Based on the current state above, guide the junior tutor on what to focus on next to progress through the learning phases."""
 
     body = {
         "model": "gpt-4.1",
@@ -35,7 +46,7 @@ async def tutor_supervisor(context: ConversationContext):
             {
                 "type": "message",
                 "role": "system",
-                "content": tutorAgentInstructions,
+                "content": tutor_agent_instructions,
             },
             {
                 "type": "message",
@@ -109,6 +120,21 @@ async def handle_tool_calls(openai, body, initial_response, breadcrumbs):
             
             final_text = '\n'.join(final_text_parts)
             return final_text
+        
+        # NEW: Always call state agent for session analysis
+        conversation_history = json.dumps([msg for msg in body['input'] if msg.get('role') in ['user', 'assistant']])
+        current_state = json.dumps(session_state)
+        
+        state_analysis = analyze_session_state(conversation_history, current_state)
+        
+        # Update global state with analysis results
+        session_state.update(state_analysis.updated_state.dict())
+        
+        # Add state guidance to breadcrumbs
+        breadcrumbs.append(create_breadcrumb(
+            "[stateAgent] session analysis", 
+            state_analysis.dict()
+        ))
         
         # Execute each function call and add results to the conversation
         for tool_call in function_calls:
