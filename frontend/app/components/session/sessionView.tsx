@@ -26,13 +26,13 @@ export function SessionView() {
   }, [highSignalData]);
 
   return (
-    <div className="bg-white rounded-xl border p-6 flex-1 flex flex-col">
+    <div className="bg-white rounded-xl border p-6 min-h-0">
       <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
         Session
       </h1>
       
       {highSignalData ? (
-        <div className="flex-1 space-y-6">
+        <div className="space-y-6">
           <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">📚 Key Content</h2>
             <div className="bg-white rounded-lg p-4 border">
@@ -41,7 +41,7 @@ export function SessionView() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-12">
           <div className="text-6xl mb-4">🎓</div>
           <h2 className="text-xl font-semibold text-gray-700 mb-2">
             Ready to learn!

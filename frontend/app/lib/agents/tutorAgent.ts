@@ -25,9 +25,16 @@ export const getNextResponseFromSupervisor = tool({
       | ((title: string, data?: any) => void)
       | undefined;
 
-    const filteredLogs = history.filter((log) => log.type === 'message');
+      const filteredLogs = history.filter((log) => log.type === 'message');
 
-    const response = await callSupervisor(relevantContextFromLastUserMessage, filteredLogs);
+      console.log('🔍 FRONTEND DEBUG:');
+      console.log('Raw history length:', history.length);
+      console.log('Filtered logs length:', filteredLogs.length);
+      console.log('Relevant context from last message:', relevantContextFromLastUserMessage); 
+      console.log('Sample raw history item:', history[0]);
+      console.log('Sample filtered item:', filteredLogs[0]);
+  
+      const response = await callSupervisor(relevantContextFromLastUserMessage, filteredLogs);
 
     console.log('🔍 SUPERVISOR RESPONSE:', response);
 
