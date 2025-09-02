@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from openai import OpenAI
-from tutor_agents.tutor.prompt import tutor_agent_instructions
+from tutor_agents.tutor.prompt import supervisor_agent_instructions
 from tutor_agents.tutor.tools import tutorAgentTools, get_tool_response
 from tutor_agents.state_agent.tools import analyze_session_state, state as session_state
 
@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List
 import json
+import pprint
 
 from tutor_agents.state_agent.tools import analyze_session_state, state as session_state
 
@@ -23,65 +24,48 @@ class ConversationContext(BaseModel):
     conversationHistory: List[dict]
 
 @router.post("/tutor-supervisor")
-async def tutor_supervisor(context: ConversationContext):  
-    
-    # Create clean conversation history for agents
-    clean_conversation = []
-    for msg in context.conversationHistory:
-        content = msg.get('content', [])
-        if content and (msg.get('status') == 'completed' or msg.get('status') == 'in_progress'):  
-            clean_conversation.append({
-                "role": msg.get('role'),
-                "content": content[0].get('transcript', '')
-            })
-    
-    print(f"🔍 CLEAN CONVERSATION ({len(clean_conversation)} messages):")
-    for i, msg in enumerate(clean_conversation):
-        print(f"  {i+1}. {msg['role']}: {msg['content']}")
-    print("=" * 60)
-    
-    # Get current state as formatted JSON
-    current_state_json = json.dumps(session_state, indent=2)
-    
-    content = f"""==== Conversation History ====
-{json.dumps(clean_conversation, indent=2)}
+async def tutor_supervisor(context: ConversationContext):
 
-==== Relevant Context From Last User Message ===
-{context.relevantContextFromLastUserMessage}
+    clean_conversation = clean_convo(context)
 
-==== CURRENT SESSION STATE ====
-{current_state_json}
+    # cleaned convo -> state agent -> state and next steps for the supervisor
+    conversation_json = json.dumps(clean_conversation)
+    current_state_json = json.dumps(session_state)
 
-Based on the current state above, guide the junior tutor on what to focus on next to progress through the learning phases."""
+    # Build the supervisor prompt
+    first_analysis = analyze_session_state(conversation_json, current_state_json)
+    session_state.update(first_analysis.updated_state.dict())   # keep global state
+    system_state_blob = "[stateAgent] session analysis\n" + json.dumps(first_analysis.dict(), indent=2)
 
     body = {
         "model": "gpt-4.1",
         "input": [
-            {
-                "type": "message",
-                "role": "system",
-                "content": tutor_agent_instructions,
-            },
+            { "type": "message", "role": "system", "content": supervisor_agent_instructions },
+            { "type": "message", "role": "system", "content": system_state_blob },
             {
                 "type": "message",
                 "role": "user",
-                "content": content,
+                "content": (
+                    "==== Conversation History ====\n"
+                    f"{json.dumps(clean_conversation, indent=2)}\n\n"
+                    "==== Relevant Context From Last User Message ===\n"
+                    f"{context.relevantContextFromLastUserMessage}"
+                )
             },
         ],
         "tools": tutorAgentTools,
     }
 
-    breadcrumbs = []  # Collect breadcrumbs during processing
+    pretty_print_body("INITIAL SUPERVISOR REQUEST BODY", body)
+
+    breadcrumbs = [create_breadcrumb("[stateAgent] session analysis", first_analysis.dict())]
+
     initial_response = await text_output(openai, body)
-    raw_text = await handle_tool_calls(openai, body, initial_response, breadcrumbs, clean_conversation)
-    
-    # Parse high-signal content from the response
-    clean_text, high_signal_content = parse_high_signal_content(raw_text)
-    
+    final_text = await handle_tool_calls(openai, body, initial_response, breadcrumbs)
+
     return {
-        "output_text": clean_text,
+        "output_text": final_text,
         "breadcrumbs": breadcrumbs,
-        "high_signal_content": high_signal_content
     }
 
 def parse_high_signal_content(text: str):
@@ -121,7 +105,7 @@ def create_breadcrumb(title: str, data: any = None):
         "timestamp": datetime.now().isoformat()
     }
 
-async def handle_tool_calls(openai, body, initial_response, breadcrumbs, clean_conversation):
+async def handle_tool_calls(openai, body, initial_response, breadcrumbs):
     """
     Iteratively handles function calls returned by the OpenAI API until
     the supervisor produces a final textual answer. Returns that answer as a string.
@@ -129,10 +113,10 @@ async def handle_tool_calls(openai, body, initial_response, breadcrumbs, clean_c
     current_response = initial_response
     
     while True:
-        # Check for errors - current_response is a dict
+        # Check for errors
         if current_response.get('error'):
             return "Something went wrong."
-        
+
         # Get output items - current_response is a dict
         output_items = current_response.get('output', [])
         
@@ -152,21 +136,6 @@ async def handle_tool_calls(openai, body, initial_response, breadcrumbs, clean_c
             
             final_text = '\n'.join(final_text_parts)
             return final_text
-        
-        # Use the actual conversation history from the request
-        conversation_history = json.dumps(clean_conversation)
-        current_state = json.dumps(session_state)
-
-        state_analysis = analyze_session_state(conversation_history, current_state)
-        
-        # Update global state with analysis results
-        session_state.update(state_analysis.updated_state.dict())
-        
-        # Add state guidance to breadcrumbs
-        breadcrumbs.append(create_breadcrumb(
-            "[stateAgent] session analysis", 
-            state_analysis.dict()
-        ))
         
         # Execute each function call and add results to the conversation
         for tool_call in function_calls:
@@ -213,3 +182,22 @@ async def handle_tool_calls(openai, body, initial_response, breadcrumbs, clean_c
 
     # After the while loop ends, return the final text
     return current_response.get("output_text", "")
+
+def pretty_print_body(label: str, body_obj: dict):
+    """Utility for readable JSON debugging in terminal."""
+    print(f"\n🔧 {label}")
+    print(json.dumps(body_obj, indent=2, default=str))
+    print("═" * 60)
+
+def clean_convo(context: ConversationContext):
+    
+    clean_conversation = [
+        {
+            "role": msg["role"],
+            "content": msg["content"][0]["transcript"]
+        }
+        for msg in context.conversationHistory
+        if msg.get("content") and msg["status"] in ("completed", "in_progress")
+    ]
+
+    return clean_conversation

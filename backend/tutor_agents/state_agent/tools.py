@@ -83,6 +83,7 @@ state = {
     "start": {
         "motivational_hook_provided": False,
         "student_baseline_explanation": False,
+        "detailed_topic_breakdown_provided": False,
         "agent_intuitive_introduction": False,
     },
     "middle": {

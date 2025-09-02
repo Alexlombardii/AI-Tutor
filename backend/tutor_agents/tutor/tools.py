@@ -2,7 +2,6 @@ from agents import function_tool, Agent
 import requests
 import os
 
-
 # Tool definitions (JSON schemas) - ESSENTIAL for OpenAI API
 tutorAgentTools = [
     {
