@@ -59,12 +59,35 @@ Based on the current state above, guide the junior tutor on what to focus on nex
 
     breadcrumbs = []  # Collect breadcrumbs during processing
     initial_response = await text_output(openai, body)
-    final_text = await handle_tool_calls(openai, body, initial_response, breadcrumbs)
+    raw_text = await handle_tool_calls(openai, body, initial_response, breadcrumbs)
+    
+    # Parse high-signal content from the response
+    clean_text, high_signal_content = parse_high_signal_content(raw_text)
+    
+    print(f"🔍 HIGH SIGNAL CONTENT PARSED: {high_signal_content}")
     
     return {
-        "output_text": final_text,
-        "breadcrumbs": breadcrumbs
+        "output_text": clean_text,
+        "breadcrumbs": breadcrumbs,
+        "high_signal_content": high_signal_content
     }
+
+def parse_high_signal_content(text: str):
+    """
+    Parse high-signal content from the supervisor response.
+    Looks for [HIGH_SIGNAL_CONTENT] section and extracts the markdown content.
+    """
+    if '[HIGH_SIGNAL_CONTENT]' not in text:
+        return text, None
+    
+    parts = text.split('[HIGH_SIGNAL_CONTENT]')
+    clean_text = parts[0].strip()
+    
+    if len(parts) > 1:
+        high_signal_content = parts[1].strip()
+        return clean_text, high_signal_content
+    
+    return clean_text, None
 
 async def text_output(openai, body):
     try:

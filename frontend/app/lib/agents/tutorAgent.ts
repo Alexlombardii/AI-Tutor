@@ -29,12 +29,21 @@ export const getNextResponseFromSupervisor = tool({
 
     const response = await callSupervisor(relevantContextFromLastUserMessage, filteredLogs);
 
+    console.log('🔍 SUPERVISOR RESPONSE:', response);
+
     // Process breadcrumbs from backend
     if (response.breadcrumbs && addBreadcrumb) {
       response.breadcrumbs.forEach((breadcrumb: any) => {
         addBreadcrumb(breadcrumb.title, breadcrumb.data);
       });
     }
+
+    // Add high-signal content as a breadcrumb if it exists
+    if (response.high_signal_content && addBreadcrumb) {
+      addBreadcrumb("[High Signal Content]", response.high_signal_content);
+    }
+
+    console.log('🔍 HIGH SIGNAL CONTENT:', response.high_signal_content);
 
     return { nextResponse: response.output_text };
   },

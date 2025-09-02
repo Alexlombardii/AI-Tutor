@@ -246,11 +246,11 @@ function ChatPageContent() {
                       downloadRecording={downloadRecording}
                     />
                   </div>
-                  
-                  {/* Hidden audio element */}
-                  <audio ref={audioElementRef} autoPlay style={{ display: 'none' }} />
                 </div>
               )}
+              
+              {/* ✅ Move audio element outside conditional - always present */}
+              <audio ref={audioElementRef} autoPlay style={{ display: 'none' }} />
             </>
           )}
         </div>
