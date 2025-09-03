@@ -10,7 +10,7 @@ import React, {
 import { v4 as uuidv4 } from "uuid";
 import { TranscriptItem } from "../lib/types";
 
-type Slate = {markdown: string};
+type Slate = { markdown: string; purpose?: string };
 
 type TranscriptContextValue = {
   transcriptItems: TranscriptItem[];
@@ -25,7 +25,7 @@ type TranscriptContextValue = {
   addTranscriptBreadcrumb: (title: string, data?: Record<string, any>) => void;
   toggleTranscriptItemExpand: (itemId: string) => void;
   updateTranscriptItem: (itemId: string, updatedProperties: Partial<TranscriptItem>) => void;
-  addHighSignalSlate: (hs: {id: string, append: boolean, markdown: string}) => void;
+  addHighSignalSlate: (hs: {id: string, append: boolean, purpose: string, markdown: string}) => void;
 };
 
 const TranscriptContext = createContext<TranscriptContextValue | undefined>(undefined);
@@ -47,7 +47,7 @@ export const TranscriptProvider: FC<PropsWithChildren> = ({ children }) => {
     return `${time}.${ms}`;
   }
 
-  function addHighSignalSlate(hs: { id: string; append: boolean; markdown: string }) {
+  function addHighSignalSlate(hs: { id: string; append: boolean; purpose: string; markdown: string }) {
     if (!hs.id || !hs.markdown) return;
 
     setSlates(prev => {
@@ -56,7 +56,7 @@ export const TranscriptProvider: FC<PropsWithChildren> = ({ children }) => {
         ? `${current}\n\n${hs.markdown}`
         : hs.markdown;
 
-      return { ...prev, [hs.id]: { markdown: newMarkdown } };
+      return { ...prev, [hs.id]: { markdown: newMarkdown, purpose: hs.purpose } };
     });
   }
 

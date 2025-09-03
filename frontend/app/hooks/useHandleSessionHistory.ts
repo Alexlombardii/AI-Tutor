@@ -60,7 +60,7 @@ export function useHandleSessionHistory() {
     addTranscriptBreadcrumb(
       `function call: ${function_name}`,
       function_args
-    );
+    );    
   }
   function handleAgentToolEnd(details: any, _agent: any, _functionCall: any, result: any) {
     const lastFunctionCall = extractFunctionCallByName(_functionCall.name, details?.context?.history);
@@ -79,9 +79,7 @@ export function useHandleSessionHistory() {
       const isUser = role === "user";
       let text = extractMessageText(content);
 
-      if (isUser && !text) {
-        text = "[Transcribing...]";
-      }
+      if (isUser && !text) text = "[Transcribing…]";
 
       addTranscriptMessage(itemId, isUser ? "user" : "assistant", text);
     }
@@ -126,6 +124,24 @@ export function useHandleSessionHistory() {
     }
   }
 
+  // For when a student uploads their workings 
+  function handleWorkingsScan(practiceQuestionId: string, workedExample: Record<string, string>, role: "user" | "assistant") {
+    const itemId = `workings-${practiceQuestionId}-${Date.now()}`;
+
+    addTranscriptBreadcrumb("[vision] parsed workings", workedExample);
+
+    /* insert as normal message so Supervisor sees it */
+    handleHistoryAdded({
+      itemId,
+      type: "message",
+      role,
+      content: [
+        { type: "workings_json", worked_example: workedExample },
+      ],
+      ts: Date.now(),
+    });
+  }
+
   const handlersRef = useRef({
     handleAgentToolStart,
     handleAgentToolEnd,
@@ -133,6 +149,7 @@ export function useHandleSessionHistory() {
     handleHistoryAdded,
     handleTranscriptionDelta,
     handleTranscriptionCompleted,
+    handleWorkingsScan,
   });
 
   return handlersRef;

@@ -69,6 +69,14 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
         }
         break;
       }
+      case "workings.scan.result": {
+        historyHandlers.handleWorkingsScan(
+          event.practice_question_id,      // the slate ID
+          event.payload.worked_example,    // the JSON from backend vision llm
+          "user"                           // role of sender
+        );
+        break;
+      }
     }
   }
 
@@ -139,6 +147,8 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
     if (!sessionRef.current) throw new Error('RealtimeSession not connected');
   };
 
-  return { status, connect, disconnect };
+  const getSessionId = () => (sessionRef.current as any)?.id as string | undefined;
+
+  return { status, connect, disconnect, getSessionId };
 }
 
