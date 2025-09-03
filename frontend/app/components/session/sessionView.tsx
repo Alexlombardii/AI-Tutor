@@ -1,56 +1,38 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTranscript } from '../../contexts/transcriptContext';
 import 'katex/dist/katex.min.css';
 import MarkdownLaTeXRenderer from '../MarkdownLaTeXRenderer';
 
 export function SessionView() {
-  const { transcriptItems } = useTranscript();
-  
-  // Find the latest high-signal content from breadcrumbs
-  const latestHighSignalContent = transcriptItems
-    .filter(item => item.type === 'BREADCRUMB' && item.title === '[High Signal Content]')
-    .sort((a, b) => b.createdAtMs - a.createdAtMs)[0];
-  
-  const highSignalData = latestHighSignalContent?.data;
-  
-  const [accumulatedContent, setAccumulatedContent] = useState<string>('');
-
-  // When new content arrives
-  useEffect(() => {
-    if (highSignalData && typeof highSignalData === 'string') {
-      setAccumulatedContent(prev => 
-        prev ? `${prev}\n\n---\n\n${highSignalData}` : highSignalData
-      );
-    }
-  }, [highSignalData]);
+  // global state from TranscriptContext
+  const { slates } = useTranscript();
 
   return (
     <div className="bg-white rounded-xl border p-6 min-h-0">
       <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
         Session
       </h1>
-      
-      {highSignalData ? (
-        <div className="space-y-6">
-          <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">📚 Key Content</h2>
-            <div className="bg-white rounded-lg p-4 border">
-              <MarkdownLaTeXRenderer content={accumulatedContent} />
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="text-6xl mb-4">🎓</div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">
-            Ready to learn!
-          </h2>
-          <p className="text-gray-500 text-center max-w-md">
-            Start your tutoring session to see equations, worked examples, and key concepts appear here
+
+      {/* High-Signal board */}
+      <div className="bg-white rounded-xl border p-6">
+        <h2 className="text-lg font-semibold mb-4 text-center">
+          Key Content
+        </h2>
+
+        {Object.keys(slates).length === 0 ? (
+          <p className="text-gray-500 text-center">
+            Equations, worked-example steps, and practice questions will appear
+            here.
           </p>
-        </div>
-      )}
+        ) : (
+          Object.entries(slates).map(([id, slate]) => (
+            <div key={id} className="mb-8">
+              <MarkdownLaTeXRenderer content={slate.markdown} />
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

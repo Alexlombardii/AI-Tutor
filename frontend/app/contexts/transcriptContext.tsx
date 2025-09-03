@@ -10,8 +10,11 @@ import React, {
 import { v4 as uuidv4 } from "uuid";
 import { TranscriptItem } from "../lib/types";
 
+type Slate = {markdown: string};
+
 type TranscriptContextValue = {
   transcriptItems: TranscriptItem[];
+  slates: Record<string, Slate>
   addTranscriptMessage: (
     itemId: string,
     role: "user" | "assistant",
@@ -22,12 +25,15 @@ type TranscriptContextValue = {
   addTranscriptBreadcrumb: (title: string, data?: Record<string, any>) => void;
   toggleTranscriptItemExpand: (itemId: string) => void;
   updateTranscriptItem: (itemId: string, updatedProperties: Partial<TranscriptItem>) => void;
+  addHighSignalSlate: (hs: {id: string, append: boolean, markdown: string}) => void;
 };
 
 const TranscriptContext = createContext<TranscriptContextValue | undefined>(undefined);
 
 export const TranscriptProvider: FC<PropsWithChildren> = ({ children }) => {
   const [transcriptItems, setTranscriptItems] = useState<TranscriptItem[]>([]);
+  // state for high-signal slates for equations and step by step workings from tutor
+  const [slates, setSlates] = useState<Record<string, Slate>>({});
 
   function newTimestampPretty(): string {
     const now = new Date();
@@ -39,6 +45,19 @@ export const TranscriptProvider: FC<PropsWithChildren> = ({ children }) => {
     });
     const ms = now.getMilliseconds().toString().padStart(3, "0");
     return `${time}.${ms}`;
+  }
+
+  function addHighSignalSlate(hs: { id: string; append: boolean; markdown: string }) {
+    if (!hs.id || !hs.markdown) return;
+
+    setSlates(prev => {
+      const current = prev[hs.id]?.markdown ?? '';
+      const newMarkdown = hs.append && current
+        ? `${current}\n\n${hs.markdown}`
+        : hs.markdown;
+
+      return { ...prev, [hs.id]: { markdown: newMarkdown } };
+    });
   }
 
   const addTranscriptMessage: TranscriptContextValue["addTranscriptMessage"] = (itemId, role, text = "", isHidden = false) => {
@@ -120,6 +139,8 @@ export const TranscriptProvider: FC<PropsWithChildren> = ({ children }) => {
         addTranscriptBreadcrumb,
         toggleTranscriptItemExpand,
         updateTranscriptItem,
+        slates,              // plural
+        addHighSignalSlate,  // helper
       }}
     >
       {children}

@@ -24,7 +24,13 @@ Return a single JSON object with these keys **in order**:
 {
   "message_to_student": string,     // text the junior tutor reads verbatim
   "tutor_guidance": string,         // 1-2 sentences reminding the tutor what to do next (from `next_focus`)
-  "high_signal_markdown": string,   // OPTIONAL. Omit or "" if nothing qualifies
+  "high_signal": {             
+    "id":      string,          // constant for one worked example
+    "step":    integer,         // 1, 2, 3 -> for the purpose key below each int will represent the step in the purpose ie a step in a worked solution to make it digestible fro the student
+    "purpose": "equation" | "worked_example" | "practice_question",
+    "append":  true | false,    // true → UI renders fro the student to see
+    "markdown": string          // LaTeX / MD for *this* micro-step
+  },
   "tool_calls": [                   // OPTIONAL. Empty array if none
     {
       "name": "lookup_topic_RAG",
@@ -34,7 +40,7 @@ Return a single JSON object with these keys **in order**:
 }
 
 Notes:  
-• `high_signal_markdown` must be valid Markdown with LaTeX ($…$ or $$…$$).  
+• `high_signal` must be valid Markdown with LaTeX ($…$ or $$…$$).  
 • NEVER put answers/solutions in practice questions.  
 • If you include `tool_calls`, the JSON must remain valid.
 

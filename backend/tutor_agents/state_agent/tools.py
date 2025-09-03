@@ -33,7 +33,6 @@ state_tool_json =   {
 }
 
 class StartPhase(BaseModel):
-    motivational_hook_provided: bool
     student_baseline_explanation: bool
     agent_intuitive_introduction: bool
 
@@ -81,9 +80,7 @@ def analyze_session_state(conversation_history, current_state):
 # State management tracker
 state = {
     "start": {
-        "motivational_hook_provided": False,
         "student_baseline_explanation": False,
-        "detailed_topic_breakdown_provided": False,
         "agent_intuitive_introduction": False,
     },
     "middle": {

@@ -25,8 +25,9 @@ class ConversationContext(BaseModel):
 
 @router.post("/tutor-supervisor")
 async def tutor_supervisor(context: ConversationContext):
+    meta_history: list[str] = []          # remembers last 5 payloads
 
-    clean_conversation = clean_convo(context)
+    clean_conversation = clean_convo(context, meta_history)
 
     # cleaned convo -> state agent -> state and next steps for the supervisor
     conversation_json = json.dumps(clean_conversation)
@@ -56,38 +57,25 @@ async def tutor_supervisor(context: ConversationContext):
         "tools": tutorAgentTools,
     }
 
-    pretty_print_body("INITIAL SUPERVISOR REQUEST BODY", body)
-
     breadcrumbs = [create_breadcrumb("[stateAgent] session analysis", first_analysis.dict())]
 
     initial_response = await text_output(openai, body)
-    final_text = await handle_tool_calls(openai, body, initial_response, breadcrumbs)
+    final_text = await handle_tool_calls(openai, body, initial_response, breadcrumbs, meta_history)
 
     return {
         "output_text": final_text,
         "breadcrumbs": breadcrumbs,
     }
 
-def parse_high_signal_content(text: str):
-    """
-    Parse high-signal content from the supervisor response.
-    Looks for [HIGH_SIGNAL_CONTENT] section and extracts the markdown content.
-    """
-    if '[HIGH_SIGNAL_CONTENT]' not in text:
-        return text, None
-    
-    parts = text.split('[HIGH_SIGNAL_CONTENT]')
-    clean_text = parts[0].strip()
-    
-    if len(parts) > 1:
-        high_signal_content = parts[1].strip()
-        return clean_text, high_signal_content
-    
-    return clean_text, None
-
 async def text_output(openai, body):
     try:
         response = openai.responses.create(**body)
+
+        # 💡 pretty-print supervisor JSON
+        msg_json = json.loads(response.output[0].content[0].text)
+        print("\n🔧 SUPERVISOR PAYLOAD (pretty)\n" +
+              json.dumps(msg_json, indent=2) +
+              "\n" + "═"*60)
 
         return {
             "output": response.output,
@@ -105,7 +93,7 @@ def create_breadcrumb(title: str, data: any = None):
         "timestamp": datetime.now().isoformat()
     }
 
-async def handle_tool_calls(openai, body, initial_response, breadcrumbs):
+async def handle_tool_calls(openai, body, initial_response, breadcrumbs, meta_history):
     """
     Iteratively handles function calls returned by the OpenAI API until
     the supervisor produces a final textual answer. Returns that answer as a string.
@@ -180,16 +168,16 @@ async def handle_tool_calls(openai, body, initial_response, breadcrumbs):
             
         current_response = await text_output(openai, body)
 
+        # payload = json.loads(...)
+        payload = json.loads(current_response.get('output_text', '{}'))
+        meta_history.append(json.dumps(payload))   # keep as string
+        if len(meta_history) > 5:                  # keep only latest 5
+            meta_history.pop(0)
+
     # After the while loop ends, return the final text
     return current_response.get("output_text", "")
 
-def pretty_print_body(label: str, body_obj: dict):
-    """Utility for readable JSON debugging in terminal."""
-    print(f"\n🔧 {label}")
-    print(json.dumps(body_obj, indent=2, default=str))
-    print("═" * 60)
-
-def clean_convo(context: ConversationContext):
+def clean_convo(context: ConversationContext, meta_history: list[str]):
     
     clean_conversation = [
         {
@@ -199,5 +187,9 @@ def clean_convo(context: ConversationContext):
         for msg in context.conversationHistory
         if msg.get("content") and msg["status"] in ("completed", "in_progress")
     ]
+
+    # attach up-to-5 previous supervisor payloads
+    for meta_str in meta_history[-5:]:
+        clean_conversation.append({ "role": "system", "content": meta_str })
 
     return clean_conversation

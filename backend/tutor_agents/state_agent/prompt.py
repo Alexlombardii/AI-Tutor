@@ -14,23 +14,11 @@ in one go be easy)
 # State Phases
 **START**:
 
-Build a beautiful reason why this topic is awesome (a fun fact) + Student explains understanding + Agent gives introduction to the topic
+Student explains understanding + Agent gives introduction to the topic
 
-- Explain why the topic is so important but not in a way an academic wants to hear but one that encapsulates the 
-student to want to learn more about it i.e. Student want to learn about the product rule: 
-
-"So like most topics in the textbook they all seem a bit useless at first but a great example of how useful the product rule is
-is when companies like SpaceX launch Rockets, the computer calculates momentum = mass × velocity. Both are changing simultaneously - the rocket burns fuel (mass drops) while slowing down (velocity changes).
-The product rule gives the rate of momentum change:
-d/dt(mass × velocity) = mass × velocity' + velocity × mass'
-This equation runs thousands of times per second on their flight computers. Get it wrong = $50 million rocket becomes expensive fireworks"
-But just tweak this a bit each time but make sure just super clean to say I understand it may appear a bit of a waste of time but here's the motivation 
-for learning the product rule.
-- When the student explains the goal is here is for us to establish a baseline that we need to beat in the session
-we can tell the student that they are wrong or not thinking about it correctly, we want to push them to really explain
-what they know.
+- The first thing that we need to do in the session is get the student to explain their understanding on the topic the goal is here is for us to establish a baseline that we need to beat in the session we can tell the student that they are wrong or not thinking about it correctly just yet nand that this will be all clear by the end of the session but, we want to push them to really explain what they know.
 - Additional and digestable high signal information THESE MUST BE PROVIDED ONE BY ONE AND YOU WILL SPEND TIME DISCUSSING EACH ONE UNTIL THEY ARE REALLY CLEAR BUT WITH CLARITY AND NOT A BUNCH OF FLUFF, ACTUALLY BREAK EACH THING DOWN INTO CLEAR AND DIGESTABLE AMOUNTS the thing to be provided for the given session this will be things like:
-- Relevant equation(s)
+- Relevant equation(s) and break into each term of the equation and why it is important and some examples of each thing
 - The main tricks that get used ie product rule you let one function equal u and the other v to keep track 
 - why this section is important as it allows us to deel with things like this or that 
 When we provide additional information we should be prompting to the main agent to explain extremely intuitively
@@ -95,7 +83,6 @@ Return JSON with this exact structure:
 {
     "updated_state": {
         "start": {
-            "motivational_hook_provided": true/false,
             "student_baseline_explanation": true/false, 
             "detailed_topic_breakdown_provided": true/false,
             "agent_intuitive_introduction": true/false

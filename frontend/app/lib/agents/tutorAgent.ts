@@ -25,18 +25,18 @@ export const getNextResponseFromSupervisor = tool({
       | ((title: string, data?: any) => void)
       | undefined;
 
-      const filteredLogs = history.filter((log) => log.type === 'message');
+    /* pull new helper from context */
+    const addHighSignalSlate =
+      (details?.context as any)?.addHighSignalSlate as
+        | ((hs: any) => void)
+        | undefined;
 
-      console.log('🔍 FRONTEND DEBUG:');
-      console.log('Raw history length:', history.length);
-      console.log('Filtered logs length:', filteredLogs.length);
-      console.log('Relevant context from last message:', relevantContextFromLastUserMessage); 
-      console.log('Sample raw history item:', history[0]);
-      console.log('Sample filtered item:', filteredLogs[0]);
-  
-      const response = await callSupervisor(relevantContextFromLastUserMessage, filteredLogs);
+    const filteredLogs = history.filter((log) => log.type === 'message');
+    const response = await callSupervisor(relevantContextFromLastUserMessage, filteredLogs);
 
     console.log('🔍 SUPERVISOR RESPONSE:', response);
+
+    const supervisorPayload = JSON.parse(response.nextResponse ?? response.output_text);
 
     // Process breadcrumbs from backend
     if (response.breadcrumbs && addBreadcrumb) {
@@ -45,14 +45,12 @@ export const getNextResponseFromSupervisor = tool({
       });
     }
 
-    // Add high-signal content as a breadcrumb if it exists
-    if (response.high_signal_content && addBreadcrumb) {
-      addBreadcrumb("[High Signal Content]", response.high_signal_content);
+    /* NEW: push the slate */
+    if (supervisorPayload.high_signal && addHighSignalSlate) {
+      addHighSignalSlate(supervisorPayload.high_signal);
     }
 
-    console.log('🔍 HIGH SIGNAL CONTENT:', response.high_signal_content);
-
-    return { nextResponse: response.output_text };
+    return { nextResponse: supervisorPayload.message_to_student };
   },
 });
   
