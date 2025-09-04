@@ -52,7 +52,7 @@ function ChatPageContent() {
   const [debugMode, setDebugMode] = useState(false);
 
   // ✅ Fix: Add callbacks to useRealtimeSession
-  const { status, connect, disconnect } = useRealtimeSession({
+  const { status, connect, disconnect, sendMessageToRealtime } = useRealtimeSession({
     onConnectionChange: (newStatus) => {
       setSessionStatus(newStatus);
       console.log('🔗 Connection status changed:', newStatus);
@@ -200,7 +200,7 @@ function ChatPageContent() {
           {currentView === 'chat' && (
             <>
               {/* ✅ Always show SessionView in normal mode */}
-              {!debugMode && <SessionView />}
+              {!debugMode && <SessionView sendMessageToRealtime={sendMessageToRealtime} />}
               
               {/* ✅ Only show debug interface when debug mode is active */}
               {debugMode && (

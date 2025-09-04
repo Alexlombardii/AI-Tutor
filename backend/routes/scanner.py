@@ -57,39 +57,11 @@ def extract_workings_with_gpt4o(img_bytes: bytes) -> dict:
 router = APIRouter()
 
 @router.post("/scanner")
-async def scan(file: UploadFile = File(...), session_id: str = Form(...),
-               practice_question_id: str = Form(...)):
-
-    print(session_id, practice_question_id)
-    # 1. vision
-    worked = extract_workings_with_gpt4o(await file.read())
-
-    # 2. fabricate a “student message” that the supervisor can read
-    convo_hist = [{
-        "itemId": f"workings-{practice_question_id}-{int(time.time()*1000)}",
-        "type": "message",
-        "status": "completed",
-        "role": "user",
-        "content": [
-            {
-                "type": "workings_json",
-                "worked_example": worked["worked_example"],
-                "transcript": "[student uploaded workings]"
-            }
-        ],
-    }]
-
-    context = ConversationContext(
-        relevantContextFromLastUserMessage="Student uploaded workings.",
-        conversationHistory=convo_hist,
-    )
-
-    # 3. call supervisor in-process
-    sup_resp = await tutor_supervisor(context)
-
-    # after broadcasting (or just before the final return)
-    return JSONResponse({
-        "worked_example": worked["worked_example"],
-        "tutor_reply": sup_resp["output_text"],
-    })
+async def scan(file: UploadFile = File(...), practice_question_id: str = Form(...)):
+    print(practice_question_id)
+    
+    student_workings = extract_workings_with_gpt4o(await file.read())
+    print(json.dumps(student_workings, indent=2))
+    
+    return student_workings
  

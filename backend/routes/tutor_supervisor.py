@@ -178,16 +178,25 @@ async def handle_tool_calls(openai, body, initial_response, breadcrumbs, meta_hi
     return current_response.get("output_text", "")
 
 def clean_convo(context: ConversationContext, meta_history: list[str]):
+    clean_conversation = []
     
-    clean_conversation = [
-        {
-            "role": msg["role"],
-            "content": msg["content"][0]["transcript"]
-        }
-        for msg in context.conversationHistory
-        if msg.get("content") and msg["status"] in ("completed", "in_progress")
-    ]
-
+    for msg in context.conversationHistory:
+        if msg.get("content") and msg["status"] in ("completed", "in_progress"):
+            content = msg["content"][0]
+            
+            # Handle both transcript and text fields
+            if "transcript" in content:
+                text_content = content["transcript"]
+            elif "text" in content:
+                text_content = content["text"]
+            else:
+                continue  # Skip if neither field exists
+                
+            clean_conversation.append({
+                "role": msg["role"],
+                "content": text_content
+            })
+    
     # attach up-to-5 previous supervisor payloads
     for meta_str in meta_history[-5:]:
         clean_conversation.append({ "role": "system", "content": meta_str })

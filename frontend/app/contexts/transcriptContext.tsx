@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  FC,
-  PropsWithChildren,
-} from "react";
+import React, {createContext, useContext, useState, FC, PropsWithChildren } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { TranscriptItem } from "../lib/types";
 
@@ -139,8 +133,8 @@ export const TranscriptProvider: FC<PropsWithChildren> = ({ children }) => {
         addTranscriptBreadcrumb,
         toggleTranscriptItemExpand,
         updateTranscriptItem,
-        slates,              // plural
-        addHighSignalSlate,  // helper
+        slates,              
+        addHighSignalSlate,  
       }}
     >
       {children}

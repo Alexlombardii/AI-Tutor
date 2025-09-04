@@ -1,8 +1,6 @@
 import { RealtimeAgent, RealtimeSession, OpenAIRealtimeWebRTC } from '@openai/agents/realtime';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { SessionStatus } from '../lib/types';
-import { createSpeechSession } from '../lib/api/speechSession';
-import { chatSupervisorScenario } from '../lib/agents'; 
 import { useTranscript } from '../contexts/transcriptContext';
 import { useHandleSessionHistory } from './useHandleSessionHistory';
 
@@ -51,7 +49,6 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
         historyHandlers.handleTranscriptionDelta(event);
         break;
       }
-      // ✅ Add these cases to handle actual conversation messages
       case "conversation.item.created": {
         if (event.item?.type === 'message') {
           historyHandlers.handleHistoryAdded(event.item);
@@ -103,7 +100,7 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
       extraContext,
       outputGuardrails,
     }: ConnectOptions) => {
-      if (sessionRef.current) return; // already connected
+      if (sessionRef.current) return; 
 
       updateStatus('CONNECTING');
 
@@ -143,12 +140,12 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
     updateStatus('DISCONNECTED');
   }, [updateStatus]);
 
-  const assertconnected = () => {
-    if (!sessionRef.current) throw new Error('RealtimeSession not connected');
-  };
+  const sendMessageToRealtime = useCallback((message: string) => {
+    if (sessionRef.current) {
+      sessionRef.current.sendMessage({type: "message", role: "user", content: [{ type: "input_text", text: message }]});
+    }
+  }, []);
 
-  const getSessionId = () => (sessionRef.current as any)?.id as string | undefined;
-
-  return { status, connect, disconnect, getSessionId };
+  return { status, connect, disconnect, sendMessageToRealtime };
 }
 

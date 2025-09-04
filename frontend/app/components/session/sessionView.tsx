@@ -8,48 +8,26 @@ import CameraScanner from "../session/CameraScanner";
 import { scanWorkings } from "../../lib/api/scanWorkings";
 import { useRealtimeSession } from "../../hooks/useRealtimeSession";
 import { Button } from "../ui/button";          
-import { useHandleSessionHistory } from "../../hooks/useHandleSessionHistory";
 
-export function SessionView() {
+export function SessionView({ sendMessageToRealtime }: { sendMessageToRealtime: (message: string, workings?: Record<string, any>) => void }) {
   // global state from TranscriptContext
   const { slates } = useTranscript();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activePQ, setActivePQ] = useState<string|null>(null);   // slate.id
-  const { status, getSessionId } = useRealtimeSession();
-  const historyHandlers = useHandleSessionHistory().current;
+  const { status } = useRealtimeSession();
 
   async function handleCapture(blob: Blob) {
     if (!activePQ) return;
     setScannerOpen(false);
     setLoading(true);
     try {
-      const realtimeId = getSessionId();           // returns string | undefined
-      if (!realtimeId) {
-        console.error("No realtime session id yet");
-        return;
-      }
-      const res = await scanWorkings(blob, {
-        sessionId: getSessionId()!,          // guaranteed defined now
-        practiceQuestionId: activePQ,
-      });
+      // Just get the vision analysis
+      const res = await scanWorkings(blob, { practiceQuestionId: activePQ });
 
-      /* 1️⃣  student upload → make it a user message */
-      historyHandlers.handleWorkingsScan(
-        activePQ,
-        res.worked_example,   // raw OCR from vision model
-        "user"
-      );
+      // Send it to the realtime session
+      sendMessageToRealtime(`I've uploaded my workings: ${JSON.stringify(res.worked_example)}`);
 
-      /* 2️⃣  tutor reply → assistant message */
-      historyHandlers.handleHistoryAdded({
-        itemId: `sup-${Date.now()}`,
-        type: "message",
-        role: "assistant",
-        status: "completed",
-        content: [{ type: "text", text: res.tutor_reply }],
-        ts: Date.now(),
-      });
     } catch (e) {
       console.error(e);
       alert("Upload failed – please try again.");
@@ -85,7 +63,6 @@ export function SessionView() {
               {slate.purpose === "practice_question" && (
                 <Button
                   onClick={() => { setActivePQ(id); setScannerOpen(true); }}
-                  disabled={status !== "CONNECTED"}        // <— this line
                   variant="default"            
                   className="mx-auto"
                 >
