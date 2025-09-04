@@ -8,6 +8,7 @@ import CameraScanner from "../session/CameraScanner";
 import { scanWorkings } from "../../lib/api/scanWorkings";
 import { useRealtimeSession } from "../../hooks/useRealtimeSession";
 import { Button } from "../ui/button";          
+import { useHandleSessionHistory } from "../../hooks/useHandleSessionHistory";
 
 export function SessionView() {
   // global state from TranscriptContext
@@ -15,7 +16,8 @@ export function SessionView() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activePQ, setActivePQ] = useState<string|null>(null);   // slate.id
-  const { getSessionId } = useRealtimeSession();   
+  const { status, getSessionId } = useRealtimeSession();
+  const historyHandlers = useHandleSessionHistory().current;
 
   async function handleCapture(blob: Blob) {
     if (!activePQ) return;
@@ -25,11 +27,28 @@ export function SessionView() {
       const realtimeId = getSessionId();           // returns string | undefined
       if (!realtimeId) {
         console.error("No realtime session id yet");
-        return console.log(realtimeId);
+        return;
       }
       const res = await scanWorkings(blob, {
-        sessionId: realtimeId,                     // <— make sure this is set
+        sessionId: getSessionId()!,          // guaranteed defined now
         practiceQuestionId: activePQ,
+      });
+
+      /* 1️⃣  student upload → make it a user message */
+      historyHandlers.handleWorkingsScan(
+        activePQ,
+        res.worked_example,   // raw OCR from vision model
+        "user"
+      );
+
+      /* 2️⃣  tutor reply → assistant message */
+      historyHandlers.handleHistoryAdded({
+        itemId: `sup-${Date.now()}`,
+        type: "message",
+        role: "assistant",
+        status: "completed",
+        content: [{ type: "text", text: res.tutor_reply }],
+        ts: Date.now(),
       });
     } catch (e) {
       console.error(e);
@@ -66,6 +85,7 @@ export function SessionView() {
               {slate.purpose === "practice_question" && (
                 <Button
                   onClick={() => { setActivePQ(id); setScannerOpen(true); }}
+                  disabled={status !== "CONNECTED"}        // <— this line
                   variant="default"            
                   className="mx-auto"
                 >

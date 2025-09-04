@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import tutor_supervisor, speech_session, responses
+from routes import tutor_supervisor, speech_session, responses, scanner
 
 from dotenv import load_dotenv
 import os
@@ -16,8 +16,8 @@ api_router = APIRouter()
 api_router.include_router(tutor_supervisor.router, prefix="/api/v1")
 api_router.include_router(speech_session.router, prefix="/api/v1")
 api_router.include_router(responses.router, prefix="/api/v1")
+api_router.include_router(scanner.router, prefix="/api/v1")
 app.include_router(api_router)
-
 origins = [
     "http://localhost:3000",  # React frontend
     "http://127.0.0.1:3000", # Alternative localhost
