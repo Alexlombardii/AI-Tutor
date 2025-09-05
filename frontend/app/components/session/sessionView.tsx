@@ -17,11 +17,10 @@ interface SessionViewProps {
 }
 
 export function SessionView({ sendMessageToRealtime, onStartSession, isConnected = false }: SessionViewProps) {
-  // global state from TranscriptContext
-  const { slates } = useTranscript();
-  const [scannerOpen, setScannerOpen] = useState(false);
+  const [slates, setSlates] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
-  const [activePQ, setActivePQ] = useState<string|null>(null);   // slate.id
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [activePQ, setActivePQ] = useState<string | null>(null);
   const { status } = useRealtimeSession();
 
   async function handleCapture(blob: Blob) {
@@ -44,60 +43,40 @@ export function SessionView({ sendMessageToRealtime, onStartSession, isConnected
   }
 
   return (
-    <div className="bg-white rounded-xl border p-6 min-h-[60vh]">
+    <div className="bg-white rounded-xl border p-4 min-h-[80vh]">
       {!isConnected ? (
-        <div className="flex flex-col items-center justify-center h-full min-h-[40vh]">
-          <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
+        <div className="flex flex-col items-center p-4 h-full min-h-[40vh]">
+          <h1 className="text-2xl font-semibold text-gray-800 text-center mb-6">
             Session
           </h1>
-          <p className="text-gray-500 text-center mb-6">
-            Equations, worked-example steps, and practice questions will appear
-            here.
+          <p className="text-gray-500 text-center">
+            Click "Start Session" above to begin your tutoring session.
           </p>
-          <Button 
-            onClick={() => {
-              if (onStartSession) {
-                onStartSession();
-              } else {
-                sendMessageToRealtime('Start session');
-              }
-            }}
-            className="px-8 py-3 text-lg"
-            size="lg"
-          >
-            Start Session
-          </Button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Session Notes & Rough Workings
+            Session Notes & Rough Workings:
           </h2>
-          {Object.keys(slates).length === 0 ? (
-            <p className="text-gray-500 text-center">
-              Session content will appear here...
-            </p>
-          ) : (
-            Object.entries(slates).map(([id, slate]) => (
-              <div key={id} className="mb-8 space-y-4">
-                <TypeWriter 
-                  content={slate.markdown} 
-                  speed={25}
-                  className="prose prose-sm max-w-none"
-                />
+          {Object.entries(slates).map(([id, slate]) => (
+            <div key={id} className="mb-8 space-y-4">
+              <TypeWriter 
+                content={slate.markdown} 
+                speed={25}
+                className="prose prose-sm max-w-none"
+              />
 
-                {slate.purpose === "practice_question" && (
-                  <Button
-                    onClick={() => { setActivePQ(id); setScannerOpen(true); }}
-                    variant="default"            
-                    className="mx-auto"
-                  >
-                    Upload Workings
-                  </Button>
-                )}
-              </div>
-            ))
-          )}
+              {slate.purpose === "practice_question" && (
+                <Button
+                  onClick={() => { setActivePQ(id); setScannerOpen(true); }}
+                  variant="default"            
+                  className="mx-auto"
+                >
+                  Upload Workings
+                </Button>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

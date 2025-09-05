@@ -1,6 +1,5 @@
 'use client';
 import React, { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import { useRouter } from 'next/navigation'
 
@@ -9,7 +8,6 @@ import { useAuth } from '@clerk/nextjs'
 import { SignedIn, SignedOut, UserButton, SignInButton, SignUpButton } from '@clerk/nextjs';
 
 // UI Components
-import Message from '../components/Message';
 import Transcript from '../components/transcript';
 import { AppSidebar } from '../components/app-sidebar';
 import {SidebarInset, SidebarProvider} from '../components/ui/sidebar';
@@ -17,6 +15,7 @@ import { Separator } from '../components/ui/separator';
 import {SidebarTrigger} from '../components/ui/sidebar';
 import { SessionView } from '../components/session/sessionView'
 import { TopicSelectionView } from '../components/topic-selection/topicSelectionView'
+import { Button } from '../components/ui/button';
 
 import {
   Breadcrumb,
@@ -210,12 +209,46 @@ function ChatPageContent() {
                       ))}
                     </div>
                   </div>
-                  <button
-                    onClick={handleBackToTopicSelection}
-                    className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                  >
-                    Change Topics
-                  </button>
+                  
+                  <div className="flex gap-2">
+                    {status === 'CONNECTED' ? (
+                      <>
+                        <Button
+                          onClick={() => disconnect()}
+                          variant="destructive"
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          End Session
+                        </Button>
+                        <Button
+                          onClick={() => console.log('Pause session')}
+                          variant="outline"
+                          size="sm"
+                          className="border-yellow-500 text-yellow-600 hover:bg-yellow-50"
+                        >
+                          Pause
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        onClick={handleConnect}
+                        disabled={status === 'CONNECTING'}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {status === 'CONNECTING' ? 'Connecting...' : 'Start Session'}
+                      </Button>
+                    )}
+                    
+                    <Button
+                      onClick={handleBackToTopicSelection}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Change Topics
+                    </Button>
+                  </div>
                 </div>
               </div>
 
