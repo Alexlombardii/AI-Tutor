@@ -15,9 +15,8 @@ import { AppSidebar } from '../components/app-sidebar';
 import {SidebarInset, SidebarProvider} from '../components/ui/sidebar';
 import { Separator } from '../components/ui/separator';
 import {SidebarTrigger} from '../components/ui/sidebar';
-import { WorkspaceView } from '../components/workspace/workspaceView';
-import { VideosView } from '../components/videos/videosView';
 import { SessionView } from '../components/session/sessionView'
+import { TopicSelectionView } from '../components/topic-selection/topicSelectionView'
 
 import {
   Breadcrumb,
@@ -33,6 +32,7 @@ import { chatSupervisorScenario } from '../lib/agents';
 
 // Types
 import { SessionStatus } from '../lib/types';
+import { Subtopic } from '../lib/types';
 
 // Hooks, API calls
 import { useRealtimeSession } from '../hooks/useRealtimeSession';
@@ -44,11 +44,12 @@ function ChatPageContent() {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
 
-  // ✅ ALL hooks must come first, before any conditional returns
-  const [currentView, setCurrentView] = useState('chat');
-  const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
+  // Navigation state
+  const [currentView, setCurrentView] = useState<'topic-selection' | 'session'>('topic-selection');
+  const [selectedSubtopics, setSelectedSubtopics] = useState<Subtopic[]>([]);
   
-  // ✅ Add debug mode state
+  // Session state
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
   const [debugMode, setDebugMode] = useState(false);
 
   // ✅ Fix: Add callbacks to useRealtimeSession
@@ -81,6 +82,18 @@ function ChatPageContent() {
     }
   }, [isLoaded, isSignedIn, router]);
 
+  // Handle starting a session with selected topics
+  const handleStartSession = (subtopics: Subtopic[]) => {
+    setSelectedSubtopics(subtopics);
+    setCurrentView('session');
+  };
+
+  // Handle going back to topic selection
+  const handleBackToTopicSelection = () => {
+    setCurrentView('topic-selection');
+    setSelectedSubtopics([]);
+  };
+
   // ✅ Fix: Update connect function to match new signature
   const handleConnect = async () => {
     if (!audioElementRef.current) {
@@ -90,13 +103,18 @@ function ChatPageContent() {
 
     try {
       await connect({
-        getEphemeralKey: createSpeechSession, // This returns the ephemeral key
+        getEphemeralKey: createSpeechSession,
         initialAgents: chatSupervisorScenario,
         audioElement: audioElementRef.current,
         extraContext: {
-          // Add any extra context you need
+          selectedSubtopics: selectedSubtopics.map(s => ({
+            topicName: s.topicName,
+            subtopicName: s.subtopicName,
+            status: s.subtopicStatus,
+            estimatedGrade: s.subtopicEstimatedGrade
+          }))
         },
-        outputGuardrails: [] // Add guardrails if needed
+        outputGuardrails: []
       });
     } catch (error) {
       console.error('Failed to connect:', error);
@@ -126,6 +144,30 @@ function ChatPageContent() {
     return null;
   }
 
+  const renderBreadcrumbs = () => {
+    return (
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbLink href="#" onClick={handleBackToTopicSelection}>
+              A-Level Maths
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          {currentView === 'session' && (
+            <>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>
+                  Session ({selectedSubtopics.length} topics)
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </>
+          )}
+        </BreadcrumbList>
+      </Breadcrumb>
+    );
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -137,80 +179,61 @@ function ChatPageContent() {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Current Session
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Chat Interface</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+            {renderBreadcrumbs()}
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          {/* Top 3 cards */}
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div 
-              onClick={() => setCurrentView('chat')}
-              className={`aspect-video rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                currentView === 'chat' 
-                  ? 'bg-blue-50 border-2 border-blue-200' 
-                  : 'bg-muted/50 hover:bg-muted/70'
-              }`}
-            >
-              <div className="text-4xl mb-2">💬</div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Tutor Session</h3>
-              <p className="text-sm text-gray-600 text-center">Your personal tutor and session notes</p>
-            </div>
-            <div 
-              onClick={() => setCurrentView('workspace')}
-              className={`aspect-video rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                currentView === 'workspace' 
-                  ? 'bg-blue-50 border-2 border-blue-200' 
-                  : 'bg-muted/50 hover:bg-muted/70'
-              }`}
-            > 
-              <div className="text-4xl mb-2">📝</div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Workspace</h3>
-              <p className="text-sm text-gray-600 text-center">Work through problems together</p>
-            </div>
-            <div 
-              onClick={() => setCurrentView('videos')}
-              className={`aspect-video rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                currentView === 'videos' 
-                  ? 'bg-blue-50 border-2 border-blue-200' 
-                  : 'bg-muted/50 hover:bg-muted/70'
-              }`}
-            >
-              <div className="text-4xl mb-2">🎥</div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Videos</h3>
-              <p className="text-sm text-gray-600 text-center">Educational video content and tutorials</p>
-            </div>
-          </div>
           
-          {/* Main Content Area */}
-          {currentView === 'workspace' && <WorkspaceView />}
-          {currentView === 'videos' && <VideosView />}
-          
-          {currentView === 'chat' && (
+          {/* Topic Selection View */}
+          {currentView === 'topic-selection' && (
+            <TopicSelectionView onStartSession={handleStartSession} />
+          )}
+
+          {/* Session View */}
+          {currentView === 'session' && (
             <>
-              {/* ✅ Always show SessionView in normal mode */}
-              {!debugMode && <SessionView sendMessageToRealtime={sendMessageToRealtime} />}
+              {/* Session Header with Selected Topics */}
+              <div className="bg-white rounded-xl border p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                      Tutoring Session
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSubtopics.map((subtopic, index) => (
+                        <span 
+                          key={index}
+                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                        >
+                          {subtopic.topicName} - {subtopic.subtopicName}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleBackToTopicSelection}
+                    className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    Change Topics
+                  </button>
+                </div>
+              </div>
+
+              {!debugMode && (
+                <SessionView 
+                  sendMessageToRealtime={sendMessageToRealtime} 
+                  onStartSession={handleConnect}
+                  isConnected={status === 'CONNECTED'}
+                />
+              )}
               
-              {/* ✅ Only show debug interface when debug mode is active */}
+              {/* Debug Mode */}
               {debugMode && (
                 <div className="bg-white rounded-xl border p-6 flex-1 flex flex-col">
-                  {/* Debug indicator */}
                   <div className="mb-4 p-2 bg-red-100 border border-red-300 rounded-lg">
                     <span className="text-red-700 text-sm font-mono">🐛 DEBUG MODE - Cmd+Shift+1 to toggle</span>
                   </div>
                   
-                  {/* Voice connection controls */}
                   <div className="mb-6 p-4 bg-blue-50 rounded-lg border">
                     <h3 className="font-bold mb-2">Voice Connection Test</h3>
                     <div className="flex gap-2 mb-2">
@@ -234,9 +257,10 @@ function ChatPageContent() {
                     </div>
                   </div>
                   
-                  <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">Session on 'Differentiation'</h1>
+                  <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
+                    Session on Selected Topics
+                  </h1>
                   
-                  {/* Transcript */}
                   <div className="flex-1 mb-6">
                     <Transcript 
                       userText={userText}
@@ -248,11 +272,11 @@ function ChatPageContent() {
                   </div>
                 </div>
               )}
-              
-              {/* ✅ Move audio element outside conditional - always present */}
-              <audio ref={audioElementRef} autoPlay style={{ display: 'none' }} />
             </>
           )}
+          
+          {/* Audio element - always present */}
+          <audio ref={audioElementRef} autoPlay style={{ display: 'none' }} />
         </div>
       </SidebarInset>
     </SidebarProvider>

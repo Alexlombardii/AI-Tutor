@@ -10,7 +10,13 @@ import { scanWorkings } from "../../lib/api/scanWorkings";
 import { useRealtimeSession } from "../../hooks/useRealtimeSession";
 import { Button } from "../ui/button";          
 
-export function SessionView({ sendMessageToRealtime }: { sendMessageToRealtime: (message: string, workings?: Record<string, any>) => void }) {
+interface SessionViewProps {
+  sendMessageToRealtime: (message: string, workings?: Record<string, any>) => void ;
+  onStartSession?: () => void;
+  isConnected?: boolean; 
+}
+
+export function SessionView({ sendMessageToRealtime, onStartSession, isConnected = false }: SessionViewProps) {
   // global state from TranscriptContext
   const { slates } = useTranscript();
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -38,46 +44,62 @@ export function SessionView({ sendMessageToRealtime }: { sendMessageToRealtime: 
   }
 
   return (
-    <div className="bg-white rounded-xl border p-6 min-h-0">
-      <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
-        Session
-      </h1>
-
-      {/* High-Signal board */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="text-lg font-semibold mb-4 text-center">
-          Key Content
-        </h2>
-
-        {Object.keys(slates).length === 0 ? (
-          <p className="text-gray-500 text-center">
+    <div className="bg-white rounded-xl border p-6 min-h-[60vh]">
+      {!isConnected ? (
+        <div className="flex flex-col items-center justify-center h-full min-h-[40vh]">
+          <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
+            Session
+          </h1>
+          <p className="text-gray-500 text-center mb-6">
             Equations, worked-example steps, and practice questions will appear
             here.
           </p>
-        ) : (
-          Object.entries(slates).map(([id, slate]) => (
-            <div key={id} className="mb-8 space-y-4">
-              {/* Typewriter effect for new content */}
-              <TypeWriter 
-                content={slate.markdown} 
-                speed={25}
-                className="prose prose-sm max-w-none"
-              />
+          <Button 
+            onClick={() => {
+              if (onStartSession) {
+                onStartSession();
+              } else {
+                sendMessageToRealtime('Start session');
+              }
+            }}
+            className="px-8 py-3 text-lg"
+            size="lg"
+          >
+            Start Session
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Session Notes & Rough Workings
+          </h2>
+          {Object.keys(slates).length === 0 ? (
+            <p className="text-gray-500 text-center">
+              Session content will appear here...
+            </p>
+          ) : (
+            Object.entries(slates).map(([id, slate]) => (
+              <div key={id} className="mb-8 space-y-4">
+                <TypeWriter 
+                  content={slate.markdown} 
+                  speed={25}
+                  className="prose prose-sm max-w-none"
+                />
 
-              {/* only for practice questions */}
-              {slate.purpose === "practice_question" && (
-                <Button
-                  onClick={() => { setActivePQ(id); setScannerOpen(true); }}
-                  variant="default"            
-                  className="mx-auto"
-                >
-                  Upload Workings
-                </Button>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+                {slate.purpose === "practice_question" && (
+                  <Button
+                    onClick={() => { setActivePQ(id); setScannerOpen(true); }}
+                    variant="default"            
+                    className="mx-auto"
+                  >
+                    Upload Workings
+                  </Button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {loading && <p className="mt-4 text-center">Analyzing…</p>}
 

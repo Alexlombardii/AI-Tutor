@@ -21,3 +21,15 @@ export interface TranscriptItem {
   status: "IN_PROGRESS" | "DONE";
   isHidden: boolean;
 }
+
+export interface Topic {
+  topicName: string;
+  subTopics: Subtopic[];
+}
+
+export interface Subtopic {
+  subtopicName: string;
+  subtopicStatus: 'not_started' | 'in_progress' | 'completed';
+  subtopicEstimatedGrade: 'A*' | 'A' | 'B' | 'C' | 'D' | 'E' | 'U';
+  topicName: string; // Add this line
+}
