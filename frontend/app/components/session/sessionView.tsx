@@ -2,7 +2,8 @@
 import React from 'react';
 import { useTranscript } from '../../contexts/transcriptContext';
 import 'katex/dist/katex.min.css';
-import MarkdownLaTeXRenderer from '../MarkdownLaTeXRenderer';
+import MarkdownLaTeXRenderer from './MarkdownLaTeXRenderer';
+import TypeWriter from './typeWriter';
 import { useState } from "react";
 import CameraScanner from "../session/CameraScanner";  
 import { scanWorkings } from "../../lib/api/scanWorkings";
@@ -56,8 +57,12 @@ export function SessionView({ sendMessageToRealtime }: { sendMessageToRealtime: 
         ) : (
           Object.entries(slates).map(([id, slate]) => (
             <div key={id} className="mb-8 space-y-4">
-              {/* original markdown render */}
-              <MarkdownLaTeXRenderer content={slate.markdown} />
+              {/* Typewriter effect for new content */}
+              <TypeWriter 
+                content={slate.markdown} 
+                speed={25}
+                className="prose prose-sm max-w-none"
+              />
 
               {/* only for practice questions */}
               {slate.purpose === "practice_question" && (

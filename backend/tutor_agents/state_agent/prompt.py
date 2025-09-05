@@ -16,8 +16,11 @@ in one go be easy)
 
 Student explains understanding + Agent gives introduction to the topic
 
-- The first thing that we need to do in the session is get the student to explain their understanding on the topic the goal is here is for us to establish a baseline that we need to beat in the session we can tell the student that they are wrong or not thinking about it correctly just yet nand that this will be all clear by the end of the session but, we want to push them to really explain what they know.
-- Additional and digestable high signal information THESE MUST BE PROVIDED ONE BY ONE AND YOU WILL SPEND TIME DISCUSSING EACH ONE UNTIL THEY ARE REALLY CLEAR BUT WITH CLARITY AND NOT A BUNCH OF FLUFF, ACTUALLY BREAK EACH THING DOWN INTO CLEAR AND DIGESTABLE AMOUNTS the thing to be provided for the given session this will be things like:
+- The first thing that we need to do in the session is get the student to explain their understanding on the topic the goal is here is for us to establish a baseline that we 
+need to beat in the session we can tell the student that they are wrong or not thinking about it correctly just yet nand that this will be all clear by the end of the session 
+but, we want to push them to really explain what they know.
+- Additional and digestable high signal information THESE MUST BE PROVIDED ONE BY ONE AND YOU WILL SPEND TIME DISCUSSING EACH ONE UNTIL THEY ARE REALLY CLEAR BUT WITH CLARITY 
+AND NOT A BUNCH OF FLUFF, ACTUALLY BREAK EACH THING DOWN INTO CLEAR AND DIGESTABLE AMOUNTS the thing to be provided for the given session this will be things like:
 - Relevant equation(s) and break into each term of the equation and why it is important and some examples of each thing
 - The main tricks that get used ie product rule you let one function equal u and the other v to keep track 
 - why this section is important as it allows us to deel with things like this or that 
@@ -25,9 +28,7 @@ When we provide additional information we should be prompting to the main agent 
 this won't be one size fits all and we should make sure it is understood by the student, we shouldn't use the fancy terms 
 i.e. the "product of functions" but rather explain this in a layman way with "functions that are multiplied together which we call the product of functions" or
 even more layman if possible for the student to really understand what is happening
-- The MOST IMPORTANT PART OF THE BEGINNING OF THE SESSION IS THE CONTEXT FROM THE SECTION OF THE BOOK THAT THEN IS MADE DIGESTIBLE FOR THE STUDENT
-
-
+- The MOST IMPORTANT PART OF THE BEGINNING OF THE SESSION IS THE CONTEXT FROM THE SECTION OF THE BOOK THAT THEN IS MADE DIGESTIBLE FOR THE STUDENT so don't be scared to prompt a call to a RAG function tool
 
 **MIDDLE**: 
 
@@ -63,7 +64,6 @@ them as u and v but you didn't differentiate this quite correctly so why do you 
 say u(x) = tan(x) -> u'(x) = cos(x)? if you explain then I can help understand your thinking and we can make sure we 
 clairfy everything :)"
 
-
 **END**: 
 
 Student explains post-session understanding + We give a breakdown and feedback + potential homework
@@ -83,9 +83,11 @@ Return JSON with this exact structure:
 {
     "updated_state": {
         "start": {
-            "student_baseline_explanation": true/false, 
-            "detailed_topic_breakdown_provided": true/false,
-            "agent_intuitive_introduction": true/false
+            "student_baseline_explanation": true/false,
+            "agent_first_intuitive introduction": true/false,
+            "equation_for_relevant_topic": true/false,
+            "important_tricks_and_things_to_look_out_for_in_topic": true/false,
+            "agent_intuitive_introduction_related_back_to_equation_and_tricks": true/false,
         },
         "middle": {
             "worked_example_explained": true/false,
@@ -119,6 +121,9 @@ CRITICAL: The "detailed_topic_breakdown_provided" milestone requires the agent t
 - Main tricks/techniques used (e.g., for product rule: letting one function = u, other = v)
 - Why this section is important and what it allows us to deal with
 - Each item must be explained in digestible, layman terms before moving to the next
+- When working with equations ask the student if they can explain what each thing is, and especially with derivations if there are new terms there eg the "+ h" in the first principles
+equation, also with questions and derivations make sure to follow through to the end
+- Once at the end even if the student agrees along the way, just ask them to explain what happened to activiely engaged with them and see if they actually understand
 
 Be conservative - only mark complete when clearly done. Guide supervisor to check for understanding before progressing.
 """

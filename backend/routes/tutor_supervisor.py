@@ -12,8 +12,6 @@ from typing import List
 import json
 import pprint
 
-from tutor_agents.state_agent.tools import analyze_session_state, state as session_state
-
 load_dotenv()
 
 router = APIRouter()
@@ -29,11 +27,11 @@ async def tutor_supervisor(context: ConversationContext):
 
     clean_conversation = clean_convo(context, meta_history)
 
-    # cleaned convo -> state agent -> state and next steps for the supervisor
+    # cleaned convo
     conversation_json = json.dumps(clean_conversation)
     current_state_json = json.dumps(session_state)
 
-    # Build the supervisor prompt
+    # Cleaned convo -> state agent -> state and next steps for the supervisorBuild the supervisor prompt
     first_analysis = analyze_session_state(conversation_json, current_state_json)
     session_state.update(first_analysis.updated_state.dict())   # keep global state
     system_state_blob = "[stateAgent] session analysis\n" + json.dumps(first_analysis.dict(), indent=2)
@@ -60,6 +58,7 @@ async def tutor_supervisor(context: ConversationContext):
     breadcrumbs = [create_breadcrumb("[stateAgent] session analysis", first_analysis.dict())]
 
     initial_response = await text_output(openai, body)
+
     final_text = await handle_tool_calls(openai, body, initial_response, breadcrumbs, meta_history)
 
     return {
@@ -71,11 +70,28 @@ async def text_output(openai, body):
     try:
         response = openai.responses.create(**body)
 
-        # 💡 pretty-print supervisor JSON
-        msg_json = json.loads(response.output[0].content[0].text)
-        print("\n🔧 SUPERVISOR PAYLOAD (pretty)\n" +
-              json.dumps(msg_json, indent=2) +
-              "\n" + "═"*60)
+        # 💡 pretty-print supervisor JSON - handle both messages and function calls
+        try:
+            # Look for a message with content in the output
+            message_content = None
+            for output_item in response.output:
+                if hasattr(output_item, 'content') and output_item.content:
+                    for content_item in output_item.content:
+                        if hasattr(content_item, 'text') and content_item.text:
+                            message_content = content_item.text
+                            break
+                    if message_content:
+                        break
+            
+            if message_content:
+                msg_json = json.loads(message_content)
+                print("\n🔧 SUPERVISOR PAYLOAD (pretty)\n" +
+                      json.dumps(msg_json, indent=2) +
+                      "\n" + "═"*60)
+            else:
+                print("🔧 SUPERVISOR RESPONSE: No message content found")
+        except Exception as parse_error:
+            print(f"🔧 SUPERVISOR RESPONSE: Could not parse JSON - {parse_error}")
 
         return {
             "output": response.output,

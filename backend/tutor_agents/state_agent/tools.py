@@ -34,7 +34,10 @@ state_tool_json =   {
 
 class StartPhase(BaseModel):
     student_baseline_explanation: bool
-    agent_intuitive_introduction: bool
+    agent_first_intuitive_introduction: bool
+    equation_for_relevant_topic: bool
+    important_tricks_and_things_to_look_out_for_in_topic: bool
+    agent_intuitive_introduction_related_back_to_equation_and_tricks: bool
 
 class MiddlePhase(BaseModel):
     worked_example_explained: bool
@@ -66,7 +69,7 @@ def analyze_session_state(conversation_history, current_state):
     """Direct call to ChatGPT with structured output."""
 
     response = openai.beta.chat.completions.parse(
-        model="gpt-4.1",
+        model="o4-mini-2025-04-16",
         messages=[
             {"role": "system", "content": state_agent_instructions},
             {"role": "user", "content": f"Current State: {current_state}\nConversation: {conversation_history}"}
@@ -81,7 +84,10 @@ def analyze_session_state(conversation_history, current_state):
 state = {
     "start": {
         "student_baseline_explanation": False,
-        "agent_intuitive_introduction": False,
+        "agent_first_intuitive_introduction": False,
+        "equation_for_relevant_topic": False,
+        "important_tricks_and_things_to_look_out_for_in_topic": False,
+        "agent_intuitive_introduction_related_back_to_equation_and_tricks": False,
     },
     "middle": {
         "worked_example_explained": False,
