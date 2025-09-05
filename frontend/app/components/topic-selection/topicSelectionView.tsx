@@ -71,9 +71,8 @@ export function TopicSelectionView({ onStartSession }: TopicSelectionViewProps) 
           
           return (
             <div key={topic.topicName} className="relative">
-              {/* Topic Card - Made taller */}
               <Card 
-                className={`p-20 cursor-pointer transition-all duration-300 hover:shadow-lg min-h-[200px] flex flex-col justify-center ${
+                className={`p-4 cursor-pointer transition-all duration-300 hover:shadow-lg min-h-[300px] flex flex-col justify-center ${
                   hoveredTopic === topic.topicName 
                     ? 'bg-blue-100 shadow-md' 
                     : 'bg-white hover:bg-gray-50'
