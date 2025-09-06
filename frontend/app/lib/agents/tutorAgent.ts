@@ -1,7 +1,6 @@
 import { RealtimeItem, tool } from '@openai/agents/realtime';
 import { callSupervisor } from '../api/tutorSupervisor';
 
-
 export const getNextResponseFromSupervisor = tool({
   name: 'getNextResponseFromSupervisor',
   description:
@@ -25,7 +24,6 @@ export const getNextResponseFromSupervisor = tool({
       | ((title: string, data?: any) => void)
       | undefined;
 
-    /* pull new helper from context */
     const addHighSignalSlate =
       (details?.context as any)?.addHighSignalSlate as
         | ((hs: any) => void)
@@ -45,12 +43,19 @@ export const getNextResponseFromSupervisor = tool({
       });
     }
 
-    /* NEW: push the slate */
+    // Push the slate
     if (supervisorPayload.high_signal && addHighSignalSlate) {
       addHighSignalSlate(supervisorPayload.high_signal);
     }
 
-    return { nextResponse: supervisorPayload.message_to_student };
+    return { 
+      nextResponse: JSON.stringify({
+        message_to_student: supervisorPayload.message_to_student,
+        guidance: response.breadcrumbs?.[0]?.data?.guidance || '',
+        next_focus: response.breadcrumbs?.[0]?.data?.next_focus || '',
+        high_signal: supervisorPayload.high_signal
+      })
+    };
   },
 });
   

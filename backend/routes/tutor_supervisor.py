@@ -21,6 +21,42 @@ class ConversationContext(BaseModel):
     relevantContextFromLastUserMessage: str  
     conversationHistory: List[dict]
 
+# Global markdown history tracker
+markdown_history: List[dict] = []
+
+def add_markdown_to_history(markdown_content: str, purpose: str, step: int = None, slate_id: str = None):
+    """Add markdown content to history"""
+    markdown_entry = {
+        "content": markdown_content,
+        "purpose": purpose,
+        "step": step,
+        "slate_id": slate_id,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    # Add to history
+    markdown_history.append(markdown_entry)
+    
+    # Keep only last 5 entries
+    if len(markdown_history) > 5:
+        markdown_history.pop(0)
+    
+    return markdown_entry
+
+def get_markdown_history_context():
+    """Generate context string about recent markdown history for the supervisor"""
+    if not markdown_history:
+        return ""
+    
+    context = "\n\n==== Last 5 Markdowns Sent to User ====\n"
+    
+    for i, entry in enumerate(markdown_history, 1):
+        context += f"{i}. ID: {entry.get('slate_id', 'N/A')}, Purpose: {entry['purpose']}, Step: {entry.get('step', 'N/A')}\n"
+        context += f"   Markdown: {entry['content']}\n\n"
+    
+    context += "==== End Markdown History ====\n"
+    return context
+
 @router.post("/tutor-supervisor")
 async def tutor_supervisor(context: ConversationContext):
     meta_history: list[str] = []          # remembers last 5 payloads
@@ -36,11 +72,15 @@ async def tutor_supervisor(context: ConversationContext):
     session_state.update(first_analysis.updated_state.dict())   # keep global state
     system_state_blob = "[stateAgent] session analysis\n" + json.dumps(first_analysis.dict(), indent=2)
 
+    # Add markdown history context to the system prompt
+    markdown_history_context = get_markdown_history_context()
+    print(markdown_history_context)
+
     body = {
         "model": "gpt-4.1",
         "input": [
             { "type": "message", "role": "system", "content": supervisor_agent_instructions },
-            { "type": "message", "role": "system", "content": system_state_blob },
+            { "type": "message", "role": "system", "content": system_state_blob + markdown_history_context },
             {
                 "type": "message",
                 "role": "user",
@@ -60,6 +100,22 @@ async def tutor_supervisor(context: ConversationContext):
     initial_response = await text_output(openai, body)
 
     final_text = await handle_tool_calls(openai, body, initial_response, breadcrumbs, meta_history)
+
+    # Parse the final response to extract and track markdown
+    try:
+        final_payload = json.loads(final_text)
+        if "high_signal" in final_payload and final_payload["high_signal"]:
+            high_signal = final_payload["high_signal"]
+            if "markdown" in high_signal:
+                add_markdown_to_history(
+                    high_signal["markdown"],
+                    high_signal.get("purpose", "unknown"),
+                    high_signal.get("step"),
+                    high_signal.get("id")
+                )
+                print(f"✅ Added markdown to history: {high_signal.get('purpose', 'unknown')} (Step {high_signal.get('step', 'N/A')})")
+    except json.JSONDecodeError:
+        print("Could not parse final response for markdown tracking")
 
     return {
         "output_text": final_text,
@@ -216,5 +272,5 @@ def clean_convo(context: ConversationContext, meta_history: list[str]):
     # attach up-to-5 previous supervisor payloads
     for meta_str in meta_history[-5:]:
         clean_conversation.append({ "role": "system", "content": meta_str })
-
+    
     return clean_conversation

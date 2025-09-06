@@ -12,6 +12,7 @@ import {
   Send,
   Settings2,
   SquareTerminal,
+  Rocket
 } from "lucide-react"
 
 import { NavMain } from "@/app/components/nav-main"
@@ -57,43 +58,16 @@ const data = {
       ],
     },
     {
-      title: "Progress",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Notes",
+      title: "History",
       url: "#",
       icon: BookOpen,
       items: [
         {
-          title: "Introduction",
+          title: "Notes",
           url: "#",
         },
         {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
+          title: "Past Sessions",
           url: "#",
         },
       ],

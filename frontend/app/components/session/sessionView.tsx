@@ -17,7 +17,8 @@ interface SessionViewProps {
 }
 
 export function SessionView({ sendMessageToRealtime, onStartSession, isConnected = false }: SessionViewProps) {
-  const [slates, setSlates] = useState<Record<string, any>>({});
+  // Remove the local slates state and use the one from context
+  const { slates } = useTranscript();
   const [loading, setLoading] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [activePQ, setActivePQ] = useState<string | null>(null);
